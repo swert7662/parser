@@ -6,68 +6,67 @@ import javafx.util.Pair;
 
 public class main {
     
-    public static Connection connection = null;
-    public static Statement statement = null;
-    public static String loginUser = "testuser";
-    public static String loginPW = "testpass";
-    public static String loginURL = "jdbc:mysql://localhost:3306/moviedb";
+
     
     public static void main(String[] args) throws SQLException {
-
+    		
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            connection = (Connection)DriverManager.getConnection(loginURL,loginUser,loginPW);
+            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/moviedb", "testuser","testpass");
+            System.out.println("Connection: " + connection);
             connection.setAutoCommit(false);
+        
+
+	        // Parse xml files for Lists of objects type Movie, Cast, and Star
+	        saxParser movieList = new saxParser("../mains243.xml");
+	        saxParser castList = new saxParser("../casts124.xml");
+	        saxParser starsList = new saxParser("../actors63.xml");
+	        
+	        movieList.runParser();
+	        castList.runParser();
+	        starsList.runParser();
+	        
+	        // Batch insert movieList Movie objects into movies table
+	        System.out.println("Connection: " + connection);
+	        Statement stmt = connection.createStatement();
+	        
+	        insertMovies(movieList, stmt);
+	        insertStars(starsList, stmt);
+	        insertGenres(movieList, stmt);
+	        insertStarsInMovies(castList, stmt);
+	        insertGenresInMovies(movieList, stmt);
+	        
+	        // For testing
+	         
+	        String sql = "SELECT * FROM stars_in_movies";
+	        ResultSet results = stmt.executeQuery(sql);
+	        stmt.clearBatch();
+	        int count = 1;
+	        while (results.next()){
+	                System.out.println(count + ". star_id = " + results.getString("star_id") 
+	                                         + " , movie_id = " + results.getString("movie_id"));
+	                ++count;
+	        }
+	         
+	        sql = "SELECT * FROM genres_in_movies";
+	        results = stmt.executeQuery(sql);
+	        stmt.clearBatch();
+	        count = 1;
+	        while (results.next()){
+	                System.out.println(count + ". genre_id = " + results.getString("genre_id") 
+	                                          + " , movie_id = " + results.getString("movie_id"));
+	                ++count;
+	        }
+	
+	        stmt.close();
         }
         catch (Exception e) {
             e.printStackTrace();
         }
-
-        // Parse xml files for Lists of objects type Movie, Cast, and Star
-        saxParser movieList = new saxParser("../mains243.xml");
-        saxParser castList = new saxParser("../casts124.xml");
-        saxParser starsList = new saxParser("../actors63.xml");
-        
-        movieList.runParser();
-        castList.runParser();
-        starsList.runParser();
-        
-        // Batch insert movieList Movie objects into movies table
-        statement = connection.createStatement();
-        
-        insertMovies(movieList);
-        insertStars(starsList);
-        insertGenres(movieList);
-        insertStarsInMovies(castList);
-        insertGenresInMovies(movieList);
-        
-        // For testing
-         
-        String sql = "SELECT * FROM stars_in_movies";
-        ResultSet results = statement.executeQuery(sql);
-        statement.clearBatch();
-        int count = 1;
-        while (results.next()){
-                System.out.println(count + ". star_id = " + results.getString("star_id") 
-                                         + " , movie_id = " + results.getString("movie_id"));
-                ++count;
-        }
-         
-        sql = "SELECT * FROM genres_in_movies";
-        results = statement.executeQuery(sql);
-        statement.clearBatch();
-        count = 1;
-        while (results.next()){
-                System.out.println(count + ". genre_id = " + results.getString("genre_id") 
-                                          + " , movie_id = " + results.getString("movie_id"));
-                ++count;
-        }
-
-        statement.close();
     }
    
     // Batch inserts movies that do not already exist in the database
-    public static void insertMovies(saxParser movieList) throws SQLException {
+    public static void insertMovies(saxParser movieList, Statement statement) throws SQLException {
         HashSet<Pair<String,String>> dbMoviesSet = new HashSet<Pair<String,String>>();
         
         // Load db names to not insert stars that already exist
@@ -106,7 +105,7 @@ public class main {
     }
     
     // Batch inserts star names that do not already exist in the database
-    public static void insertStars(saxParser starsList) throws SQLException {
+    public static void insertStars(saxParser starsList, Statement statement) throws SQLException {
         // HashSets to insure no duplicate star names are input or overwritten
         HashSet<Pair<String, String>> xmlStarSet = new HashSet<Pair<String, String>>();
         HashSet<Pair<String, String>> dbStarSet = new HashSet<Pair<String, String>>();
@@ -154,7 +153,7 @@ public class main {
     }
     
     // Batch inserts genre names that do not already exist in the database
-    public static void insertGenres(saxParser movieList) throws SQLException {
+    public static void insertGenres(saxParser movieList, Statement statement) throws SQLException {
         HashSet<String> xmlGenreSet = new HashSet<String>();
         HashSet<String> dbgenreSet = new HashSet<String>();
         
@@ -204,7 +203,7 @@ public class main {
         }
     }
     
-    public static void insertGenresInMovies(saxParser movieList) throws SQLException {
+    public static void insertGenresInMovies(saxParser movieList, Statement statement) throws SQLException {
         HashMap<String, Integer> genresMap = new HashMap<String, Integer>();
         HashMap<Pair<String, String>, Integer> moviesMap = new HashMap<Pair<String, String>, Integer>();
         HashSet<Pair<Integer, Integer>> checkID = new HashSet<Pair<Integer, Integer>>();
@@ -266,7 +265,7 @@ public class main {
     }
     
     // Assumes no duplicate stars due to it being impossible to check stars without DOB
-    public static void insertStarsInMovies(saxParser castList) throws SQLException {
+    public static void insertStarsInMovies(saxParser castList, Statement statement) throws SQLException {
         HashSet<Pair<Integer, Integer>> checkID = new HashSet<Pair<Integer, Integer>>();
         HashMap<Pair<String, String>, Integer> starNamesToID = new HashMap<Pair<String, String>, Integer>();
         HashMap<Pair<String, String>, Integer> movieNamesToID = new HashMap<Pair<String, String>, Integer>();
