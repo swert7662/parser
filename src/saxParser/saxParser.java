@@ -44,7 +44,7 @@ public class saxParser extends DefaultHandler{
     
     public void runParser(){
         parse();
-        printData();
+        //printData();
     }
     
     public void parse(){
@@ -111,10 +111,15 @@ public class saxParser extends DefaultHandler{
             }
              
         } else if (qName.equalsIgnoreCase("year")){
-            //tempMov.setYear(1234);
-            tempMov.setYear(Integer.parseInt(tempVal));
+        	if (tempVal.matches("^[0-9]+$"))
+        		tempMov.setYear(Integer.parseInt(tempVal));
         } else if (qName.equalsIgnoreCase("dirn")){
-            tempMov.setDirector(tempVal);
+        	if(tempVal != null)
+        	{
+        		tempMov.setDirector(tempVal);
+        	}
+        	else
+        		tempMov.setDirector("");
         } else if (qName.equalsIgnoreCase("cat")){
             tempMov.addGenre(new genre(movieCategories.get(tempVal)));            
         }
@@ -139,7 +144,8 @@ public class saxParser extends DefaultHandler{
         }
                 // Removed due to invalid DOB format on xml being only year
         else if (qName.equalsIgnoreCase("dob")) {
-        	tempStar.setDob(tempVal);
+        	if (tempVal.matches("^[0-9]+$"))
+        		tempStar.setDob(tempVal);
         } 
     }
     
@@ -179,5 +185,4 @@ public class saxParser extends DefaultHandler{
         movieCategories.put("TVs", "TV Series");
         movieCategories.put("TVm", "TV Miniseries");
     }
-    
 }

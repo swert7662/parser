@@ -12,10 +12,7 @@ public class main {
     		
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/moviedb", "testuser","testpass");
-            System.out.println("Connection: " + connection);
-            connection.setAutoCommit(false);
-        
+            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/moviedb", "root","password");      
 
 	        // Parse xml files for Lists of objects type Movie, Cast, and Star
 	        saxParser movieList = new saxParser("../mains243.xml");
@@ -27,7 +24,6 @@ public class main {
 	        starsList.runParser();
 	        
 	        // Batch insert movieList Movie objects into movies table
-	        System.out.println("Connection: " + connection);
 	        Statement stmt = connection.createStatement();
 	        
 	        insertMovies(movieList, stmt);
@@ -36,13 +32,14 @@ public class main {
 	        insertStarsInMovies(castList, stmt);
 	        insertGenresInMovies(movieList, stmt);
 	        
+	        
 	        // For testing
 	         
 	        String sql = "SELECT * FROM stars_in_movies";
 	        ResultSet results = stmt.executeQuery(sql);
 	        stmt.clearBatch();
 	        int count = 1;
-	        while (results.next()){
+	        /*while (results.next()){
 	                System.out.println(count + ". star_id = " + results.getString("star_id") 
 	                                         + " , movie_id = " + results.getString("movie_id"));
 	                ++count;
@@ -56,7 +53,7 @@ public class main {
 	                System.out.println(count + ". genre_id = " + results.getString("genre_id") 
 	                                          + " , movie_id = " + results.getString("movie_id"));
 	                ++count;
-	        }
+	        }*/
 	
 	        stmt.close();
         }
@@ -66,41 +63,52 @@ public class main {
     }
    
     // Batch inserts movies that do not already exist in the database
-    public static void insertMovies(saxParser movieList, Statement statement) throws SQLException {
-        HashSet<Pair<String,String>> dbMoviesSet = new HashSet<Pair<String,String>>();
-        
-        // Load db names to not insert stars that already exist
-        String query = "SELECT id, title, director FROM movies";
-        ResultSet results = statement.executeQuery(query);
-        statement.clearBatch();
-        while (results.next()) {
-            dbMoviesSet.add(new Pair(results.getString("title"), results.getString("director")));
-        }
-        
-        // Insert into db if there are no duplicates
-        String batchInsertQuery = "INSERT INTO movies (title, year, director) VALUES ";
-        Iterator it = movieList.elements.iterator();
-        int count = 0;
-        while (it.hasNext()) {
-            movie tempMov = (movie)it.next();
-   
-            // Check for valid input and add to batch insert
-            // banner and trailer url do not appear in xml files
-            if ((dbMoviesSet.isEmpty() || !dbMoviesSet.contains(new Pair(tempMov.getTitle(), tempMov.getDirector())))
-                && tempMov.getTitle().matches("[a-zA-Z.]+") 
-                && tempMov.getDirector().matches("[a-zA-Z.]+")) {
-                batchInsertQuery += " ('" + tempMov.getTitle() + "', '" 
-                                          + tempMov.getYear() + "', '" 
-                                          + tempMov.getDirector() + "'),";
-                ++count;
-            }
-        }
-        // Replace trailing "," with ";" and insert
-        batchInsertQuery = batchInsertQuery.substring(0, batchInsertQuery.length() -1) + ";";
-        
-        if (count != 0) {
-            statement.executeUpdate(batchInsertQuery);
-            statement.clearBatch();
+    public static void insertMovies(saxParser movieList, Statement statement) {
+    	try {
+	        HashSet<Pair<String,String>> dbMoviesSet = new HashSet<Pair<String,String>>();
+	        
+	        // Load db names to not insert stars that already exist
+	        String query = "SELECT id, title, director FROM movies";
+	        ResultSet results = statement.executeQuery(query);
+	        statement.clearBatch();
+	        while (results.next()) {
+	            dbMoviesSet.add(new Pair(results.getString("title"), results.getString("director")));
+	        }
+	        
+	        // Insert into db if there are no duplicates
+	        String batchInsertQuery = "INSERT INTO movies (title, year, director) VALUES ";
+	        Iterator it = movieList.elements.iterator();
+	        int count = 0;
+	        while (it.hasNext()) {
+	            movie tempMov = (movie)it.next();
+	            // Check for valid input and add to batch insert
+	            // banner and trailer url do not appear in xml files
+	            if ((dbMoviesSet.isEmpty() || !dbMoviesSet.contains(new Pair(tempMov.getTitle(), tempMov.getDirector())))
+	                && tempMov.getTitle().matches("[a-zA-Z.]+") 
+	                && tempMov.getDirector() != null && tempMov.getDirector().matches("[a-zA-Z.]+")) {
+	            	
+	            	String batchQuery = "insert into movies (title, year, director) values ";
+	            	
+	            	batchQuery += " ('" + tempMov.getTitle() + "', " 
+	                                          + tempMov.getYear() + ", '" 
+	                                          + tempMov.getDirector() + "')";
+	            	statement.addBatch(batchQuery);
+	                ++count;
+	            }
+	        }
+	        
+	        if (count != 0) {
+	        	statement.executeBatch();
+	        }
+    	} catch (SQLException ex){ 
+	    	while (ex != null) 
+	        {
+	            System.out.println("SQL Exception:  " + ex.getMessage());
+	            ex = ex.getNextException();
+	        }
+    	}
+    	catch (Exception e) {
+            e.printStackTrace();
         }
     }
     
@@ -308,7 +316,7 @@ public class main {
         while (it.hasNext()) {
             cast tempCast = (cast) it.next();
             if (movieNamesToID.containsKey(new Pair(tempCast.getMovie(), tempCast.getDirector())) 
-                    && starNamesToID.containsKey(new Pair(tempCast.getFirst_name(), tempCast.getLast_name()))
+                    && tempCast.getFirst_name() != null && starNamesToID.containsKey(new Pair(tempCast.getFirst_name(), tempCast.getLast_name()))
                     && !checkID.contains(new Pair(starNamesToID.get(new Pair(tempCast.getFirst_name(), tempCast.getLast_name())),movieNamesToID.get(new Pair(tempCast.getMovie(), tempCast.getDirector()))))) {
                 batchInsertQuery += " ('" + starNamesToID.get(new Pair(tempCast.getFirst_name(), tempCast.getLast_name())) + "','"
                                           + movieNamesToID.get(new Pair(tempCast.getMovie(), tempCast.getDirector())) + "'),";

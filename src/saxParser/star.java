@@ -124,7 +124,7 @@ public class star {
 //	}
 //	/**
 //	 * @param dob the dob to set
-//	 */
+
 //	public void setDob(Date dob) {
 //		this.dob = dob;
 //	}
