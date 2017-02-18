@@ -8,8 +8,8 @@ public class main {
     
     public static Connection connection = null;
     public static Statement statement = null;
-    public static String loginUser = "root";
-    public static String loginPW = "Password1";
+    public static String loginUser = "testuser";
+    public static String loginPW = "testpass";
     public static String loginURL = "jdbc:mysql://localhost:3306/moviedb";
     
     public static void main(String[] args) throws SQLException {
@@ -24,9 +24,9 @@ public class main {
         }
 
         // Parse xml files for Lists of objects type Movie, Cast, and Star
-        saxParser movieList = new saxParser("mains243.xml");
-        saxParser castList = new saxParser("casts124.xml");
-        saxParser starsList = new saxParser("actors63.xml");
+        saxParser movieList = new saxParser("../mains243.xml");
+        saxParser castList = new saxParser("../casts124.xml");
+        saxParser starsList = new saxParser("../actors63.xml");
         
         movieList.runParser();
         castList.runParser();
@@ -68,7 +68,7 @@ public class main {
    
     // Batch inserts movies that do not already exist in the database
     public static void insertMovies(saxParser movieList) throws SQLException {
-        HashSet<Pair<String,String>> dbMoviesSet = new HashSet();
+        HashSet<Pair<String,String>> dbMoviesSet = new HashSet<Pair<String,String>>();
         
         // Load db names to not insert stars that already exist
         String query = "SELECT id, title, director FROM movies";
@@ -108,8 +108,8 @@ public class main {
     // Batch inserts star names that do not already exist in the database
     public static void insertStars(saxParser starsList) throws SQLException {
         // HashSets to insure no duplicate star names are input or overwritten
-        HashSet<Pair<String, String>> xmlStarSet = new HashSet();
-        HashSet<Pair<String, String>> dbStarSet = new HashSet();
+        HashSet<Pair<String, String>> xmlStarSet = new HashSet<Pair<String, String>>();
+        HashSet<Pair<String, String>> dbStarSet = new HashSet<Pair<String, String>>();
         
         // Load xmlNames
         Iterator it = starsList.elements.iterator();
@@ -155,8 +155,8 @@ public class main {
     
     // Batch inserts genre names that do not already exist in the database
     public static void insertGenres(saxParser movieList) throws SQLException {
-        HashSet<String> xmlGenreSet = new HashSet();
-        HashSet<String> dbgenreSet = new HashSet();
+        HashSet<String> xmlGenreSet = new HashSet<String>();
+        HashSet<String> dbgenreSet = new HashSet<String>();
         
         // Load genre list from movies and add to set to prevent duplicates
         Iterator it = movieList.elements.iterator();
@@ -205,9 +205,9 @@ public class main {
     }
     
     public static void insertGenresInMovies(saxParser movieList) throws SQLException {
-        HashMap<String, Integer> genresMap = new HashMap();
-        HashMap<Pair<String, String>, Integer> moviesMap = new HashMap();
-        HashSet<Pair<Integer, Integer>> checkID = new HashSet();
+        HashMap<String, Integer> genresMap = new HashMap<String, Integer>();
+        HashMap<Pair<String, String>, Integer> moviesMap = new HashMap<Pair<String, String>, Integer>();
+        HashSet<Pair<Integer, Integer>> checkID = new HashSet<Pair<Integer, Integer>>();
         
         
         String query = "SELECT id, name FROM genres";
@@ -267,10 +267,10 @@ public class main {
     
     // Assumes no duplicate stars due to it being impossible to check stars without DOB
     public static void insertStarsInMovies(saxParser castList) throws SQLException {
-        HashSet<Pair<Integer, Integer>> checkID = new HashSet();
-        HashMap<Pair<String, String>, Integer> starNamesToID = new HashMap();
-        HashMap<Pair<String, String>, Integer> movieNamesToID = new HashMap();
-        HashSet<cast> castSet = new HashSet();
+        HashSet<Pair<Integer, Integer>> checkID = new HashSet<Pair<Integer, Integer>>();
+        HashMap<Pair<String, String>, Integer> starNamesToID = new HashMap<Pair<String, String>, Integer>();
+        HashMap<Pair<String, String>, Integer> movieNamesToID = new HashMap<Pair<String, String>, Integer>();
+        HashSet<cast> castSet = new HashSet<cast>();
         
         // Load movieNamesToID map from movies table
         String query = "SELECT id, title, director FROM movies";

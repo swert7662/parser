@@ -138,9 +138,9 @@ public class saxParser extends DefaultHandler{
             elements.add(tempStar); 
         }
                 // Removed due to invalid DOB format on xml being only year
-//        else if (qName.equalsIgnoreCase("dob")) {
-//            tempStar.setDob(tempVal);
-//        } 
+        else if (qName.equalsIgnoreCase("dob")) {
+        	tempStar.setDob(tempVal);
+        } 
     }
     
     // populate genre categories
