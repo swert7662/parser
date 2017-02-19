@@ -76,7 +76,6 @@ public class main {
 	        }
 	        
 	        // Insert into db if there are no duplicates
-	        String batchInsertQuery = "INSERT INTO movies (title, year, director) VALUES ";
 	        Iterator it = movieList.elements.iterator();
 	        int count = 0;
 	        while (it.hasNext()) {
@@ -99,6 +98,7 @@ public class main {
 	        
 	        if (count != 0) {
 	        	statement.executeBatch();
+	        	statement.clearBatch();
 	        }
     	} catch (SQLException ex){ 
 	    	while (ex != null) 
@@ -133,7 +133,6 @@ public class main {
             dbStarSet.add(new Pair(starNames.getString("first_name"), starNames.getString("last_name")));
         }
         
-        String batchInsertQuery = "INSERT INTO stars (first_name, last_name) VALUES ";
         it = xmlStarSet.iterator();
         int count = 0;
         while (it.hasNext()) {
@@ -144,18 +143,19 @@ public class main {
                 // Check for valid input and add to batch insert
                 if ((tempName.getKey().equals("") || tempName.getKey().matches("[a-zA-Z.]+")) &&
                 tempName.getValue().matches("[a-zA-Z.]+")) {
-                batchInsertQuery += " ('" + tempName.getKey() + "', '" 
-                                          + tempName.getValue()+ "'),";
-                ++count;
+                	String batchQuery = "INSERT INTO stars (first_name, last_name) VALUES ";
+	                batchQuery += " ('" + tempName.getKey() + "', '" 
+	                                          + tempName.getValue()+ "')";
+                	statement.addBatch(batchQuery);
+                	
+	                ++count;
                 }
             }
         }
-        // Replace trailing "," with ";" and insert
-        batchInsertQuery = batchInsertQuery.substring(0, batchInsertQuery.length() -1) + ";";
         
         // In case there are no entries to update
         if (count != 0) {
-            statement.executeUpdate(batchInsertQuery);
+            statement.executeBatch();
             statement.clearBatch();
         }
     }
@@ -190,23 +190,22 @@ public class main {
             dbgenreSet.add(results.getString("name"));
         }
         
-        // Batch insert into genres if name does not already exist
-        String batchInsertQuery = "INSERT INTO genres (name) VALUES ";
         it = xmlGenreSet.iterator();
         int count = 0;
         while (it.hasNext()) {
             String name = (String)it.next();
             if (!dbgenreSet.contains(name)) {
-                batchInsertQuery += " ('" + name + "'),";
+            	String batchQuery = "INSERT INTO genres (name) VALUES ";
+                batchQuery += " ('" + name + "')";
+                statement.addBatch(batchQuery);
+                
                 ++count;
             }
         }
-        // Replace trailing "," with ";" and insert
-        batchInsertQuery = batchInsertQuery.substring(0, batchInsertQuery.length() -1) + ";";
         
         // Execute insert only if genres were added
         if (count != 0) {
-            statement.executeUpdate(batchInsertQuery);
+            statement.executeBatch();
             statement.clearBatch();
         }
     }
@@ -240,11 +239,12 @@ public class main {
         }      
         
         // Batch insert into genres_in_movies
-        // title, director and name Strings added for readability
-        String batchInsertQuery = "INSERT IGNORE INTO genres_in_movies (genre_id, movie_id) VALUES ";
         Iterator it = movieList.elements.iterator();
         int count = 0;
         while (it.hasNext()) {
+        	
+        	String batchQuery = "INSERT IGNORE INTO genres_in_movies (genre_id, movie_id) VALUES ";
+        	
             movie tempMov = (movie) it.next();
             String title = tempMov.getTitle();
             String director = tempMov.getDirector();
@@ -255,18 +255,16 @@ public class main {
                 String name = tempGenre.getName();
                 if (moviesMap.get(new Pair(title, director)) != null && genresMap.get(name) != null
                         && (checkID.isEmpty() || !checkID.contains(new Pair(genresMap.get(name), moviesMap.get(new Pair(title, director)))))) {
-                    batchInsertQuery += " ('" + genresMap.get(name) + "','"
-                                              + moviesMap.get(new Pair(title, director)) + "'),";
+                    batchQuery += " ('" + genresMap.get(name) + "','"
+                                              + moviesMap.get(new Pair(title, director)) + "')";
                     ++count;
                 }
             }
         }
-        // Replace trailing "," with ";" and insert
-        batchInsertQuery = batchInsertQuery.substring(0, batchInsertQuery.length() -1) + ";";
         
         // Execute insert only if elements were added
         if (count != 0) {
-            statement.executeUpdate(batchInsertQuery);
+            statement.executeBatch();
             statement.clearBatch();
         }
         
@@ -310,25 +308,25 @@ public class main {
         }
         
         // Insert into database using Cast variables as ID's
-        String batchInsertQuery = "INSERT IGNORE INTO stars_in_movies (star_id, movie_id) VALUES ";
         it = castSet.iterator();
         int count = 0;
         while (it.hasNext()) {
+        	String batchQuery =  "INSERT IGNORE INTO stars_in_movies (star_id, movie_id) VALUES ";
             cast tempCast = (cast) it.next();
             if (movieNamesToID.containsKey(new Pair(tempCast.getMovie(), tempCast.getDirector())) 
                     && tempCast.getFirst_name() != null && starNamesToID.containsKey(new Pair(tempCast.getFirst_name(), tempCast.getLast_name()))
                     && !checkID.contains(new Pair(starNamesToID.get(new Pair(tempCast.getFirst_name(), tempCast.getLast_name())),movieNamesToID.get(new Pair(tempCast.getMovie(), tempCast.getDirector()))))) {
-                batchInsertQuery += " ('" + starNamesToID.get(new Pair(tempCast.getFirst_name(), tempCast.getLast_name())) + "','"
-                                          + movieNamesToID.get(new Pair(tempCast.getMovie(), tempCast.getDirector())) + "'),";
+                batchQuery += " ('" + starNamesToID.get(new Pair(tempCast.getFirst_name(), tempCast.getLast_name())) + "','"
+                                          + movieNamesToID.get(new Pair(tempCast.getMovie(), tempCast.getDirector())) + "')";
+                statement.addBatch(batchQuery);
+                
                 ++count;
             }
         }
-        // Replace trailing "," with ";" and insert
-        batchInsertQuery = batchInsertQuery.substring(0, batchInsertQuery.length() -1) + ";";
         
         // Execute insert only if elements were added
         if (count != 0) {
-            statement.executeUpdate(batchInsertQuery);
+            statement.executeBatch();
             statement.clearBatch();
         }
        
